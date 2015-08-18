@@ -210,7 +210,8 @@ final class Ringer extends CallsManagerListenerBase {
                 } catch (NumberFormatException e) {
                     Log.w(this,"Subid is not a number " + e);
                 }
- mRingtonePlayer.play(foregroundCall.getRingtone(), startVolume, rampUpTime);            } else {
+                mRingtonePlayer.play(foregroundCall.getRingtone(), startVolume, rampUpTime);
+            } else {
                 Log.v(this, "startRingingOrCallWaiting, skipping because volume is 0");
             }
 
