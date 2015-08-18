@@ -49,6 +49,9 @@ class AsyncRingtonePlayer {
     /** The current ringtone. Only used by the ringtone thread. */
     private Ringtone mRingtone;
 
+    private float mIncrementAmount;
+    private float mCurrentIncrementVolume;
+
     private int mPhoneId = 0;
     private float mIncrementAmount;
     private float mCurrentIncrementVolume;
@@ -72,12 +75,14 @@ class AsyncRingtonePlayer {
         Log.d(this, "Posting play.");
 
         postMessage(EVENT_PLAY, true /* shouldCreateHandler */, ringtone,
-                Math.round(incStartVolume * 100F), incRampUpTime);    }
+                Math.round(incStartVolume * 100F), incRampUpTime);
+    }
 
     /** Stops playing the ringtone. */
     void stop() {
         Log.d(this, "Posting stop.");
-		postMessage(EVENT_STOP, false /* shouldCreateHandler */, null, 0, 0);    }
+        postMessage(EVENT_STOP, false /* shouldCreateHandler */, null, 0, 0);
+    }
 
     /**
      * Posts a message to the ringtone-thread handler. Creates the handler if specified by the
@@ -86,8 +91,9 @@ class AsyncRingtonePlayer {
      * @param messageCode The message to post.
      * @param shouldCreateHandler True when a handler should be created to handle this message.
      */
-private void postMessage(int messageCode, boolean shouldCreateHandler,
-            Uri ringtone, int arg1, int arg2) {        synchronized(this) {
+    private void postMessage(int messageCode, boolean shouldCreateHandler,
+            Uri ringtone, int arg1, int arg2) {
+        synchronized(this) {
             if (mHandler == null && shouldCreateHandler) {
                 mHandler = getNewHandler();
             }
@@ -95,7 +101,8 @@ private void postMessage(int messageCode, boolean shouldCreateHandler,
             if (mHandler == null) {
                 Log.d(this, "Message %d skipped because there is no handler.", messageCode);
             } else {
-mHandler.obtainMessage(messageCode, arg1, arg2, ringtone).sendToTarget();            }
+                mHandler.obtainMessage(messageCode, arg1, arg2, ringtone).sendToTarget();
+            }
         }
     }
 
@@ -113,7 +120,8 @@ mHandler.obtainMessage(messageCode, arg1, arg2, ringtone).sendToTarget();       
             public void handleMessage(Message msg) {
                 switch(msg.what) {
                     case EVENT_PLAY:
-						handlePlay((Uri) msg.obj, (float) msg.arg1 / 100F, msg.arg2);                        break;
+                        handlePlay((Uri) msg.obj, (float) msg.arg1 / 100F, msg.arg2);
+                        break;
                     case EVENT_REPEAT:
                         handleRepeat();
                         break;
@@ -137,7 +145,8 @@ mHandler.obtainMessage(messageCode, arg1, arg2, ringtone).sendToTarget();       
     /**
      * Starts the actual playback of the ringtone. Executes on ringtone-thread.
      */
-private void handlePlay(Uri ringtoneUri, float incStartVolume, int incRampUpTime) {        // don't bother with any of this if there is an EVENT_STOP waiting.
+    private void handlePlay(Uri ringtoneUri, float incStartVolume, int incRampUpTime) {
+        // don't bother with any of this if there is an EVENT_STOP waiting.
         if (mHandler.hasMessages(EVENT_STOP)) {
             return;
         }
@@ -155,9 +164,9 @@ private void handlePlay(Uri ringtoneUri, float incStartVolume, int incRampUpTime
             }
         }
 
-         if (incRampUpTime > 0) {
+        if (incRampUpTime > 0) {
             Log.d(this, "Starting ringtone volume at " + Math.round(incStartVolume * 100F) + "%");
-           mRingtone.setVolume(incStartVolume);
+            mRingtone.setVolume(incStartVolume);
 
             mIncrementAmount = (1F - incStartVolume) / (float) incRampUpTime;
             mCurrentIncrementVolume = incStartVolume;
@@ -166,7 +175,6 @@ private void handlePlay(Uri ringtoneUri, float incStartVolume, int incRampUpTime
         } else {
             mRingtone.setVolume(1F);
         }
-
 
         handleRepeat();
     }
@@ -207,7 +215,8 @@ private void handlePlay(Uri ringtoneUri, float incStartVolume, int incRampUpTime
         synchronized(this) {
             // At the time that STOP is handled, there should be no need for repeat messages in the
             // queue.
-			mHandler.removeMessages(EVENT_INCREASE_VOLUME);
+            mHandler.removeMessages(EVENT_REPEAT);
+            mHandler.removeMessages(EVENT_INCREASE_VOLUME);
 
             if (mHandler.hasMessages(EVENT_PLAY)) {
                 Log.v(this, "Keeping alive ringtone thread for subsequent play request.");
